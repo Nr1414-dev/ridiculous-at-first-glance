@@ -44,6 +44,18 @@ def main() -> int:
     with open(path, "w", encoding="utf-8", newline="") as handle:
         handle.write(text)
     os.chmod(path, 0o644)
+    # Verify what landed: read the file back and confirm it is exactly
+    # the validated sentence, still mode 0644, so a partial write or a
+    # stray umask can never silently ship a different entry.
+    with open(path, "r", encoding="utf-8", newline="") as handle:
+        written = handle.read()
+    if written != text:
+        print("written entry differs from the validated sentence",
+              file=sys.stderr)
+        return 1
+    if oct(os.stat(path).st_mode & 0o777) != "0o644":
+        print("written entry is not mode 0644", file=sys.stderr)
+        return 1
     print(f"wrote {len(text)} characters to {path}")
     return 0
 
